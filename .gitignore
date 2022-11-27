@@ -1,0 +1,9 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/Hotel Task/v16
+/Debug
+/Hotel Task.vcxproj.user
+/Hotel Task.vcxproj.filters
+/Hotel Task.vcxproj
