@@ -4,8 +4,9 @@
 #include <cstdlib>
 #include <ctime>
 
-const int MAX_ROOMS = 80;
-const int MAX_RESERVES = 2;
+const int MAX_ROOMS = 5;
+const int DIVISIONS = 1;
+const int MIN_ROOMS = 1;
 
 struct Reservation
 {
@@ -35,7 +36,7 @@ int discount_amount()
 int room_division()
 {
 	srand((int)time(NULL));
-	return rand() % (MAX_ROOMS / 4) + 20;
+	return rand() % (MAX_ROOMS / DIVISIONS) + MIN_ROOMS;
 }
 
 int fetch_room(Reservation * reserves, bool want_doubles)
@@ -80,7 +81,7 @@ void validated_input(T& input, int min = 0, int max = 0)
 	{
 		if (std::cin.good())
 		{
-			std::cout << "\n[ Only numbers between " << min << "-" << max << " are valid! ]\n\n";
+			std::cout << "[ Only numbers from " << min << "-" << max << " are valid! ]\n";
 
 			std::cin >> std::setw(1) >> input;
 			in_between = input >= min && input <= max;
@@ -90,12 +91,13 @@ void validated_input(T& input, int min = 0, int max = 0)
 			std::cin.clear();
 			std::cin.ignore(INT_MAX, '\n');
 
-			std::cout << "\n[ Only numbers are allowed! ]\n\n";
+			std::cout << "[ Only numbers are allowed! ]\n";
 
 			std::cin >> std::setw(1) >> input;
 			in_between = input >= min && input <= max;
 		}
 	}
+
 	std::cin.clear();
 	std::cin.ignore(INT_MAX, '\n');
 }
@@ -109,26 +111,33 @@ T validated_input(int min = 0, int max = 0)
 	return input;
 }
 
-void validated_input(std::string& input)
+void validated_input(std::string& input, bool num_allowed = false)
 {
-	std::cin >> std::setw(32) >> input;
-	while (!std::cin.good())
-	{
-		std::cin.clear();
-		std::cin.ignore(INT_MAX, '\n');
-		std::cout << "Max characters (32) reached! Try again: ";
-		std::cin >> std::setw(32) >> input;
-	}
+	int checker = 0;
+	bool success = false;
 
-	std::cin.clear();
-	std::cin.ignore(INT_MAX, '\n');
+	std::getline(std::cin, input);
+
+	if (num_allowed) return;
+
+	while (!success)
+	{
+		try
+		{
+			checker = std::stoi(input);
+			std::cout << "Name cannot start with a number: ";
+			std::getline(std::cin, input);
+		} catch (const std::exception&)
+		{
+			success = true;
+		}
+	}
 }
 
-
-std::string validated_input()
+std::string validated_input(bool num_allowed = false)
 {
 	std::string input;
-	validated_input(input);
+	validated_input(input, num_allowed);
 
 	return input;
 }
@@ -151,12 +160,15 @@ void show_reserved(Reservation &current_room, bool ndef = false)
 	
 	if (!ndef)
 	{
-		std::cout << "\n[ Room is booked! ]\n";
+		std::cout << "\n[ Your room has been booked " << current_room.reserve_name << " ]\n";
 	}
 
 	std::cout << "--------------------------\n";
-	std::cout << "Name: " << current_room.reserve_name << "\nRoom type: " << type << "\nID: " << current_room.reservation_id << "\nNights: " << current_room.nights;
-	std::cout << "\n--------------------------\n\n";
+	std::cout << "Name: [" << current_room.reserve_name << "]\n";
+	std::cout << "Room type: [" << type << "]\n";
+	std::cout << "Nights: [" << current_room.nights << "]\n";
+	std::cout << "ID: [" << current_room.reservation_id << "]\n";
+	std::cout << "--------------------------\n\n";
 }
 
 #pragma endregion
@@ -192,11 +204,14 @@ void book_room(Reservation &room)
 
 void check_reservation(Reservation* reserves)
 {
+	short int found_index[MAX_ROOMS];
+
 	int id = 0;
+	short int indexer = 0;
 	bool is_str = false;
 
 	std::cout << "\nEnter [Name] or [Room ID]: ";
-	std::string r_info = validated_input();
+	std::string r_info = validated_input(true);
 
 	try
 	{
@@ -208,35 +223,51 @@ void check_reservation(Reservation* reserves)
 	}
 
 
-	int amount = 0;
 	for (size_t i = 0; i < MAX_ROOMS; i++)
 	{
+		if (!reserves[i].is_booked) continue;
+
 		if (is_str)
 		{
 			if (r_info == reserves[i].reserve_name)
 			{
-				amount++;
-				show_reserved(reserves[i], true);
+				found_index[indexer] = i;
+				indexer++;
 			}
 		}
 		else
 		{
 			if (id == reserves[i].reservation_id)
 			{
-				show_reserved(reserves[i], true);
+				found_index[indexer] = i;
+				indexer++;
 				return;
 			}
 		}
 	}
+
+	if (indexer == 0)
+	{
+		std::cout << "\n[ " << r_info << " ] not found in the system!\n\n";
+		return;
+	}
+	else
+	{
+		std::cout << "Room booked by [" << r_info << "]\n";
+		for (int i = 0; i < indexer; i++)
+		{
+			show_reserved(reserves[found_index[i]], true);
+		}
+	}
+	
 }
 
-void controller(Reservation * reserves, int &single_am, int &double_am)
+void controller(Reservation * reserves, int &single_am, int &double_am, bool &wants_to_quit)
 {
-	int current_choice = 0;
-
-	printf("Single: %i, Double: %i\n", single_am, double_am);
+	printf("AVAILABLE ROOMS\nsingle: %i, double: %i\n\n", single_am, double_am);
 	show_choices();
-	validated_input(current_choice, 1, 3);
+
+	int current_choice = validated_input<int>(1, 3);
 
 	switch (current_choice)
 	{
@@ -263,19 +294,21 @@ void controller(Reservation * reserves, int &single_am, int &double_am)
 		check_reservation(reserves);
 		break;
 	case 3:
-		return;
+		wants_to_quit = true;
+		break;
 	}
 }
 
 int main()
 {
+	bool wants_to_quit = false;
 	int booked_amount = 0;
 	
-	int division = room_division() * 2;
-	int single_room = division / 2, double_room = division / 2;
+	int r_division = room_division() * 2;
+	int single_room = r_division / 2, double_room = r_division / 2;
 
 	Reservation user_reservation[MAX_ROOMS];
-	for (size_t i = 0; i < division; i++)
+	for (size_t i = 0; i < r_division; i++)
 	{
 		if (i > single_room)
 		{
@@ -288,9 +321,9 @@ int main()
 	
 	do
 	{
-		controller(user_reservation, single_room, double_room);
+		controller(user_reservation, single_room, double_room, wants_to_quit);
 	}
-	while (booked_amount < (single_room + double_room));
+	while (booked_amount < (single_room + double_room) && !wants_to_quit);
 
 	return 0;
 }
