@@ -4,9 +4,9 @@
 #include <cstdlib>
 #include <ctime>
 
-const int MAX_ROOMS = 5;
-const int DIVISIONS = 1;
-const int MIN_ROOMS = 1;
+const int MAX_ROOMS = 80;
+const int DIVISIONS = 4;
+const int MIN_ROOMS = 20;
 
 struct Reservation
 {
@@ -43,7 +43,7 @@ int fetch_room(Reservation * reserves, bool want_doubles)
 {
 	int index = 0;
 
-	for (size_t i = 0; i < MAX_ROOMS; i++)
+	for (int i = 0; i < MAX_ROOMS; i++)
 	{
 		if (want_doubles)
 		{
@@ -125,10 +125,19 @@ void validated_input(std::string& input, bool num_allowed = false)
 		try
 		{
 			checker = std::stoi(input);
-			std::cout << "Name cannot start with a number: ";
+			std::cout << "\n[ Name cannot start with a number ]\n\n";
 			std::getline(std::cin, input);
-		} catch (const std::exception&)
+		} 
+		catch (const std::exception&)
 		{
+			if (input == "")
+			{
+				std::cout << "\n[ Please enter your name before you continue ]\n\n";
+				std::cin.clear();
+				std::getline(std::cin, input);
+				continue;
+			}
+
 			success = true;
 		}
 	}
@@ -146,7 +155,7 @@ std::string validated_input(bool num_allowed = false)
 
 #pragma region Logs
 
-void show_choices()
+void log_choices()
 {
 	std::cout << "What's on your mind?\n";
 	std::cout << "1. [ Reserve a room ]\n";
@@ -154,7 +163,7 @@ void show_choices()
 	std::cout << "3. [ Quit application ]\n\n";
 }
 
-void show_reserved(Reservation &current_room, bool ndef = false)
+void log_reserved(Reservation &current_room, bool ndef = false)
 {
 	const char* type = current_room.is_double ? "Double" : "Single";
 	
@@ -171,35 +180,59 @@ void show_reserved(Reservation &current_room, bool ndef = false)
 	std::cout << "--------------------------\n\n";
 }
 
+void log_rooms(Reservation * rooms)
+{
+	for (int i = 0; i < MAX_ROOMS; i++)
+	{
+		bool is_booked = rooms[i].is_booked;
+		if (!is_booked) continue;
+
+		std::string teller = rooms[i].reserve_name == "" ? "Unknown" : rooms[i].reserve_name;
+
+		if (rooms[i].is_double)
+		{
+			std::cout << i << ". [ Double ] Booked by: " << teller << "\n";
+			
+		}
+		else
+		{
+			std::cout << i << ". [ Single ] Booked by: " << teller << "\n";
+		}
+	}
+	std::cout << "\n";
+}
+
 #pragma endregion
 
 int room_type()
 {
 	std::cout << "\nSelect room type!\n";
 	std::cout << "1. [ Single room ]\n";
-	std::cout << "2. [ Double room ]\n\n";
+	std::cout << "2. [ Double room ]\n";
+	std::cout << "3. [ Go to start ]\n\n";
 	
-	return validated_input<int>(1, 2);
+	return validated_input<int>(1, 3);
 }
 
 void book_room(Reservation &room)
 {
 	if (room.is_booked)
 	{
-		std::cout << "\n[Room already booked!]\n\n";
+		std::cout << "\n[ Room already booked! ]\n\n";
 		return;
 	}
 
-	std::cout << "Number of nights: ";
+	std::cout << "[ Specify the number of nights to stay ]\n\n";
 	validated_input(room.nights, 1, 365);
 
 	room.is_booked = true;
 	room.reservation_id = reserve_id();
 
-	std::cout << "Enter your name: ";
-	validated_input(room.reserve_name);
+	std::cout << "\n[ Specify the reservor's name ]\n\n";
+	std::string name = validated_input();
+	room.reserve_name = name;
 
-	show_reserved(room);
+	log_reserved(room);
 }
 
 void check_reservation(Reservation* reserves)
@@ -210,20 +243,21 @@ void check_reservation(Reservation* reserves)
 	short int indexer = 0;
 	bool is_str = false;
 
-	std::cout << "\nEnter [Name] or [Room ID]: ";
+	std::cout << "\n[ Search for name or room id ]\n\n";
 	std::string r_info = validated_input(true);
 
 	try
 	{
 		id = std::stoi(r_info);
 		is_str = false;
-	} catch (const std::exception&)
+	} 
+	catch (const std::exception&)
 	{
 		is_str = true;
 	}
 
 
-	for (size_t i = 0; i < MAX_ROOMS; i++)
+	for (int i = 0; i < MAX_ROOMS; i++)
 	{
 		if (!reserves[i].is_booked) continue;
 
@@ -253,10 +287,10 @@ void check_reservation(Reservation* reserves)
 	}
 	else
 	{
-		std::cout << "Room booked by [" << r_info << "]\n";
+		std::cout << "\nRoom booked by [" << r_info << "]\n";
 		for (int i = 0; i < indexer; i++)
 		{
-			show_reserved(reserves[found_index[i]], true);
+			log_reserved(reserves[found_index[i]], true);
 		}
 	}
 	
@@ -265,36 +299,39 @@ void check_reservation(Reservation* reserves)
 void controller(Reservation * reserves, int &single_am, int &double_am, bool &wants_to_quit)
 {
 	printf("AVAILABLE ROOMS\nsingle: %i, double: %i\n\n", single_am, double_am);
-	show_choices();
+	log_choices();
 
-	int current_choice = validated_input<int>(1, 3);
+	int current_choice = validated_input<int>(1, 4);
 
 	switch (current_choice)
 	{
 	case 1:
-		if (room_type() == 1)
+		switch (room_type())
 		{
-			int index = fetch_room(reserves, false);
-
+		case 1:
 			std::cout << "\n";
-			book_room(reserves[index]);
+
+			book_room(reserves[fetch_room(reserves, false)]);
 			single_am--;
-		}
-		else
-		{
-			int index = fetch_room(reserves, true);
-
+			break;
+		case 2:
 			std::cout << "\n";
-			book_room(reserves[index]);
-			double_am--;
-		}
 
+			book_room(reserves[fetch_room(reserves, true)]);
+			double_am--;
+			break;
+		case 3:
+			return;
+		}
 		break;
 	case 2:
 		check_reservation(reserves);
 		break;
 	case 3:
 		wants_to_quit = true;
+		break;
+	case 4:
+		log_rooms(reserves);
 		break;
 	}
 }
@@ -308,7 +345,7 @@ int main()
 	int single_room = r_division / 2, double_room = r_division / 2;
 
 	Reservation user_reservation[MAX_ROOMS];
-	for (size_t i = 0; i < r_division; i++)
+	for (int i = 0; i < r_division; i++)
 	{
 		if (i > single_room)
 		{
