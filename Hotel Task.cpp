@@ -1,12 +1,9 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
-#include <cstdlib>
-#include <ctime>
 
-const int MAX_ROOMS = 80;
-const int DIVISIONS = 4;
-const int MIN_ROOMS = 20;
+#include "Constants.h"
+#include "Utility.h"
 
 struct Reservation
 {
@@ -19,27 +16,7 @@ struct Reservation
 	int nights = 0;
 };
 
-#pragma region Util Functions
-
-int reserve_id()
-{
-	srand((int)time(NULL));
-	return rand() % 90000 + 10000;
-}
-
-int discount_amount()
-{
-	srand((int)time(NULL));
-	return rand() % 3 * 10;
-}
-
-int room_division()
-{
-	srand((int)time(NULL));
-	return rand() % (MAX_ROOMS / DIVISIONS) + MIN_ROOMS;
-}
-
-int fetch_room(Reservation * reserves, bool want_doubles)
+int fetch_room(Reservation* reserves, bool want_doubles)
 {
 	int index = 0;
 
@@ -63,10 +40,6 @@ int fetch_room(Reservation * reserves, bool want_doubles)
 
 	return index;
 }
-
-
-
-#pragma endregion
 
 #pragma region Input Validation
 
