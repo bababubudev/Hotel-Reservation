@@ -1,8 +1,12 @@
 #pragma once
 
-const int MAX_ROOMS = 80;
-const int DIVISIONS = 4;
-const int MIN_ROOMS = 20;
+/* header file for keeping all the unchanged values */
+/* 
+constexpr instead of const because they are values 
+given statically and does not need to be called from say a funciton 
+*/
+constexpr int MAX_ROOMS = 80;
+constexpr int MIN_ROOMS = 20;
 
-const int PRICE_S = 100;
-const int PRICE_D = 150;
+constexpr int PRICE_S = 100;
+constexpr int PRICE_D = 150;
