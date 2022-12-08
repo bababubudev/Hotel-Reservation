@@ -66,19 +66,16 @@ int fetch_room(const reservation *reserves, const bool want_doubles)
 Calculates discounts randomly using discount_amount(), a header file function and finalizes the price.
 Prints out the amount of discount added if required, controlled by a boolean parameter.
 */
-void fetch_prices(reservation &room, const bool log)
+void fetch_prices(reservation &room)
 {
 	const int cost = room.is_double ? PRICE_D * room.nights : PRICE_S * room.nights;
 	const int discount = discount_amount();
 
-	if (log)
-	{
-		std::cout << "Accumulated cost: [" << cost << " EUR]\n";
-		if (discount > 0)
-			std::cout << "Price discount: [-" << static_cast<double>(cost) * discount * 0.01 << " EUR. (" << discount << "%)]\n\n";
-		else
-			std::cout << "Price discount: [No discounts!]\n\n";
-	}
+	std::cout << "Accumulated cost: [" << cost << " EUR]\n";
+	if (discount > 0)
+		std::cout << "Price discount: [-" << static_cast<double>(cost) * discount * 0.01 << " EUR. (" << discount << "%)]\n\n";
+	else
+		std::cout << "Price discount: [No discounts!]\n\n";
 
 	room.current_cost = cost - (static_cast<double>(cost) * discount * 0.01);
 }
@@ -109,8 +106,8 @@ void log_reserved(reservation &current_room, const bool foreign = false)
 	std::cout << "Nights: [" << current_room.nights << "]\n";
 	std::cout << "ID: [" << current_room.r_id << "]\n\n";
 
-	/* Boolean foreign is negated to only execute when on the first run */
-	fetch_prices(current_room, !foreign);
+	/* Calculation is only done only in the beginning */
+	if (!foreign) fetch_prices(current_room);
 	std::cout << "Total cost: [" << current_room.current_cost << " EUR]\n";
 	std::cout << "--------------------------------\n\n";
 }
@@ -205,8 +202,16 @@ void release_room(const reservation *reserves, int &singles, int &doubles)
 	const int ind_s = fetch_room(reserves, false);
 
 	/* if room is unbooked and had previously been set */
-	if (!reserves[ind_d].is_booked && reserves[ind_d].is_set) doubles++; /* adds one more to double room amount */
-	if (!reserves[ind_s].is_booked && reserves[ind_s].is_set) singles++; /* adds one more to single room amount */
+	if (!reserves[ind_d].is_booked && reserves[ind_d].is_set) 
+	{
+		doubles++;
+		return;
+	}
+	if (!reserves[ind_s].is_booked && reserves[ind_s].is_set)
+	{
+		singles++;
+		return;
+	}
 }
 
 /* Used to search, modify and redirect to other function relating to a singular reservation */
