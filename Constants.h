@@ -1,10 +1,4 @@
 #pragma once
-
-/* header file for keeping all the unchanged values */
-/* 
-constexpr instead of const because they are values 
-given statically and does not need to be called from say a funciton 
-*/
 constexpr int MAX_ROOMS = 80;
 constexpr int MIN_ROOMS = 20;
 
